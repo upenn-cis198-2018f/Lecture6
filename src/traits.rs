@@ -178,6 +178,18 @@ fn test_display_person() {
     // assert!(false);
 }
 
+// Example from Piazza Q
+// If you want to re-implement Display for a type that already exists,
+// you need to make a wrapper around that type, like this:
+struct Potato(Vec<i32>);
+
+impl Display for Potato {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Potato({:?})", self.0)?;
+        Ok(())
+    }
+}
+
 /*
     From and Into
 
