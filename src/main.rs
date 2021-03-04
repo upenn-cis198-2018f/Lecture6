@@ -1,5 +1,6 @@
-#![allow(dead_code, unused_variables, unused_assignments, unused_mut)]
+pub mod generics;
+pub mod traits;
 
-mod generics;
-
-fn main() {}
+fn main() {
+    println!("CIS198 Lecture 6: Traits and Generics");
+}

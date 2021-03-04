@@ -1,30 +1,26 @@
 // Must import the trait to use it!
-use std::io::Read;
 use std::fmt::Debug;
-use std::fmt::Display;
 use std::fmt::Formatter;
+use std::io::Read;
 
-
-struct SortedVector<T> {
+pub struct SortedVector<T> {
     sv: Vec<T>,
 }
 
-enum MyResult<T, E> {
+pub enum MyResult<T, E> {
     Ok(T),
     Err(E),
 }
 
-
 // Parametric Polymorphic.
 // Type is basically an argument, type variable
 // doesn't affect computation of function.
-fn get_first<T>(list: &[T]) -> Option<&T> {
-    if list.len() >= 1 {
-        Some(& list[0])
-    }else {
+pub fn get_first<T>(list: &[T]) -> Option<&T> {
+    if list.is_empty() {
         None
+    } else {
+        Some(&list[0])
     }
-
 }
 
 // Traits:
@@ -43,9 +39,11 @@ fn get_first<T>(list: &[T]) -> Option<&T> {
 // Ad-hoc polymorphism.
 // Implemnentation of read_to_string depends on the type of R: Read that we have.
 // Trait Bound!
-fn get_results<R: Read>(reader: &mut R) -> String {
+pub fn get_results<R: Read>(reader: &mut R) -> String {
     let mut string = String::new();
-    reader.read_to_string(&mut string).expect("Failed to read from source.");
+    reader
+        .read_to_string(&mut string)
+        .expect("Failed to read from source.");
     string
 }
 
@@ -57,12 +55,13 @@ fn get_results<R: Read>(reader: &mut R) -> String {
 // Word of the day monomorphisation
 
 // In newer Rust
-fn get_result2(reader: &mut impl Read) -> String {
+pub fn get_result2(reader: &mut impl Read) -> String {
     let mut string = String::new();
-    reader.read_to_string(&mut string).expect("Failed to read from source.");
+    reader
+        .read_to_string(&mut string)
+        .expect("Failed to read from source.");
     string
 }
-
 
 // Ask: Name of the traits that we know.
 // Write, Read, Clone, Debug, Display, Serialize, Copy.
@@ -71,14 +70,14 @@ fn get_result2(reader: &mut impl Read) -> String {
 
 // Trait Objects
 // What if I want a heterogeneous array?
-fn print_a_bunch_of_things(thing: & Debug) {
+pub fn print_a_bunch_of_things(thing: &dyn Debug) {
     println!("{:?}", thing);
 }
 
-fn print_my_things() {
+pub fn print_my_things() {
     // Something like this would work in Java... Object
     // let v: Vec<impl Debug> = vec![5, 10.2, "hello", None];
-    let things: Vec<& Debug> = vec![& 5, & 10.2, & "hello", & Some(5)];
+    let things: Vec<&dyn Debug> = vec![&5, &10.2, &"hello", &Some(5)];
 
     for v in things {
         print_a_bunch_of_things(v);
@@ -90,7 +89,7 @@ fn print_my_things() {
 // Is debug the type? No! Rust messed up. This is instead a Trait Object.
 // Requires dynamic dispatch.
 // Instead we should use the following syntax:
-fn print_a_bunch_of_things2(thing: & dyn Debug) {
+pub fn print_a_bunch_of_things2(thing: &dyn Debug) {
     println!("{:?}", thing);
 }
 
@@ -98,7 +97,7 @@ fn print_a_bunch_of_things2(thing: & dyn Debug) {
 // https://doc.rust-lang.org/std/collections/struct.HashMap.html
 
 // Notice this implementation itself is generic!
-impl <T: Debug> Debug for SortedVector<T> {
+impl<T: Debug> Debug for SortedVector<T> {
     fn fmt(&self, f: &mut Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
         self.sv.fmt(f)
     }
@@ -107,14 +106,13 @@ impl <T: Debug> Debug for SortedVector<T> {
 // Either the trait or the type must be defined in this crate.
 // Avoids clashes in implementations.
 
-
 // Traits can be generic also!
 // E.g
 pub trait Into<T> {
     fn into(self) -> T;
 }
 
-impl <P: PartialOrd> Into<Vec<P>> for SortedVector<P> {
+impl<P: PartialOrd> Into<Vec<P>> for SortedVector<P> {
     fn into(self) -> Vec<P> {
         unimplemented!();
     }
@@ -135,7 +133,7 @@ trait Graph<N, E> {
 pub trait Iterator {
     type Item; // Associated type!
     fn next(&mut self) -> Option<Self::Item>; // Use associated type
-    //...
+                                              //...
 }
 
 // See how it's used in collect! Basically magic!
