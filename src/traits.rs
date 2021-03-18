@@ -8,8 +8,10 @@
 */
 
 use std::collections::HashMap;
+use std::ops::Index;
 use std::fmt;
 use std::fmt::Display;
+use std::str::FromStr;
 
 #[derive(Clone, Debug)]
 pub struct Person {
@@ -20,10 +22,11 @@ pub struct Person {
 }
 
 pub struct AddressBook {
-    // should not really be public, normally would want to hide implementation
+    // Note: struct fields
+    // should not usually be public, normally would want to hide implementation
     // details in the API for your data structure
-    pub by_name: HashMap<String, Person>,
-    pub by_age: HashMap<u8, Vec<Person>>,
+    by_name: HashMap<String, Person>,
+    by_age: HashMap<u8, Vec<Person>>,
 }
 impl AddressBook {
     pub fn new() -> Self {
@@ -283,37 +286,38 @@ fn test_address_book_default() {
     a Result error.
 */
 
-// impl FromStr for Person {
-//     // New we haven't seen -- specify a type as part of the trait
-//     // Called an "associated type"
-//     // It's actually internally similar to something we have seen:
-//     // recall From syntax:
-//     // From<(String, u8)>
-//     // (String, u8) is basically the same thing -- a type that you
-//     // specify along with implementing the trait.
-//     type Err = String;
-//
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         // Complex parsing logic here
-//         // Parsing can sometimes be annoying
-//         // &str API has a bunch of useful functions, particularly
-//         // matching patterns
-//         // https://doc.rust-lang.org/std/primitive.str.html
-//         // Rough pseudocode:
-//         // - Check if the string starts with 'Person'
-//         // - Then split the remainder of the string by a separator
-//         //   character ',', by calling .split()
-//         // - For each part, try to parse it as the corresponding
-//         //   field of Person
-//         // - For each line that fails, use the ? operator:
-//         //       let name = split_parts[2].parse()?;
-//         //   That forwards the error case to return from the function
-//         //   immediately.
-//         // In the end you would end up with something where you
-//         // can call "Person(caleb, 26, ...)".parse()
-//         // to get a person object.
-//     }
-// }
+impl FromStr for Person {
+    // New we haven't seen -- specify a type as part of the trait
+    // Called an "associated type"
+    // It's actually internally similar to something we have seen:
+    // recall From syntax:
+    // From<(String, u8)>
+    // (String, u8) is basically the same thing -- a type that you
+    // specify along with implementing the trait.
+    type Err = String;
+
+    fn from_str(_s: &str) -> Result<Self, Self::Err> {
+        // Complex parsing logic here
+        // Parsing can sometimes be annoying
+        // &str API has a bunch of useful functions, particularly
+        // matching patterns
+        // https://doc.rust-lang.org/std/primitive.str.html
+        // Rough pseudocode:
+        // - Check if the string starts with 'Person'
+        // - Then split the remainder of the string by a separator
+        //   character ',', by calling .split()
+        // - For each part, try to parse it as the corresponding
+        //   field of Person
+        // - For each line that fails, use the ? operator:
+        //       let name = split_parts[2].parse()?;
+        //   That forwards the error case to return from the function
+        //   immediately.
+        // In the end you would end up with something where you
+        // can call "Person(caleb, 26, ...)".parse()
+        // to get a person object.
+        unimplemented!()
+    }
+}
 
 /*
     Common operations:
@@ -336,13 +340,14 @@ fn test_address_book_default() {
 */
 
 // Maybe we want to directly access a Person entry by name
-// impl Index<str> for AddressBook {
-//     fn index(&self, idx: &str) -> &Person {
-//         self.by_name[idx]
-//     }
-// }
+impl Index<&str> for AddressBook {
+    type Output = Person;
+    fn index(&self, idx: &str) -> &Person {
+        &self.by_name[idx]
+    }
+}
 
-// if I have an AddressBook a
+// Now if I have an AddressBook a
 // I can use the syntax println!("{}", a["caleb"])
 // rather than using another method.
 
@@ -376,4 +381,23 @@ fn test_address_book_default() {
 /*
     ***** Part 3 *****
     Defining your own traits
+
+    Traits Define Shared Behavior Across Types.
+
+    In implementing software we often find that similar behavior
+    recurs across types.
+
+    For our AddressBook example, suppose that we want to
+    print out a "summary view" of the AddressBook to the user,
+    e.g. the first 10 people in it by name and age.
+    Now we take a look at the types inside our AddressBook:
+    we have:
+        - Person
+        - Vec<Person>
+        - Fields inside Person, like [u8; 10] and String
+
+    Q: For our AddressBook summary, what behavior would we like the above types
+    to satisfy?
+
+    Having identified the common behavior, let's write a trait.
 */
