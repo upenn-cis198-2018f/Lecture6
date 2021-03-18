@@ -8,9 +8,9 @@
 */
 
 use std::collections::HashMap;
-use std::ops::Index;
 use std::fmt;
 use std::fmt::Display;
+use std::ops::{Deref, Index};
 use std::str::FromStr;
 
 #[derive(Clone, Debug)]
@@ -30,10 +30,7 @@ pub struct AddressBook {
 }
 impl AddressBook {
     pub fn new() -> Self {
-        Self {
-            by_name: HashMap::new(),
-            by_age: HashMap::new(),
-        }
+        Self { by_name: HashMap::new(), by_age: HashMap::new() }
     }
     pub fn add_person(&mut self, person: Person) {
         self.by_name.insert(person.name.clone(), person.clone());
@@ -250,10 +247,7 @@ fn test_from_into() {
 
 impl Default for AddressBook {
     fn default() -> Self {
-        Self {
-            by_name: Default::default(),
-            by_age: Default::default(),
-        }
+        Self { by_name: Default::default(), by_age: Default::default() }
         // ^^ HashMap implements Default!
     }
 }
@@ -359,11 +353,127 @@ impl Index<&str> for AddressBook {
 
 /*
     Others:
+    - Deref
     - AsRef
     - Borrow
-    - Read / Write
-    - Iterator
+
+      Trait to do automatic conversion when that is more
+      convenient than manually converting between types.
 */
+
+// Maybe you want to leave the possibility open to
+// change what a PhoneNumber is and how it's implemented,
+// so you decided to abstract it as a type.
+
+pub struct PhoneNumber([u8; 10]);
+
+pub struct Person2 {
+    pub name: String,
+    pub age: u8,
+    pub phone: PhoneNumber,
+    pub favorite_color: String,
+}
+
+// Q: What might go wrong if I have an existing code base
+// (say, large industry-scale project) and I decided to
+// add this PhoneNumber type?
+
+// There might be multiple possible answers here, but one
+// thing that would definitely go wrong is that everywhere
+// phone is used, in particular wherever Person2 is used,
+// you have to update the code.
+//      ==> downsides: potentially invasive/breaking changes
+//      ==> lose readability
+
+impl Person2 {
+    pub fn existing_method(&self) {
+        // Existing code: errors because self.phone is now
+        // a PhoneNumber instead of a [u8; 10]
+        // let area_code = self.phone[0..3];
+        let area_code = &self.phone.0[0..3];
+        println!("Area code: {:?}", area_code);
+    }
+}
+
+// Idea: **treat** PhoneNumber as "automatically convertible" to [u8; 10].
+// Writing .0 everywhere is annoying sometimes
+// Maybe it is safe to treat these as essentially interchangeable.
+
+// In Rust, there are a few traits to accomplish this, but the most
+// simple and useful one is to convert on dereference, via either AsRef
+// or Deref
+// Let's show Deref here (more automatic)
+
+impl Deref for PhoneNumber {
+    type Target = [u8; 10];
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/*
+    Now magically the existing code should just convert
+    implicitly and not need the .0
+*/
+impl Person2 {
+    pub fn existing_method2(&self) {
+        // Existing code: errors because self.phone is now
+        // a PhoneNumber instead of a [u8; 10]
+        let area_code = &self.phone[0..3];
+        println!("Area code: {:?}", area_code);
+    }
+}
+
+/*
+    A couple more traits before we move on to iplementing our own.
+
+    - Read / Write
+
+      For objects that can be read or written to.
+
+    println!("{}", ...)
+    write!(f, "{}", ...)
+    ^ for f implementing the Write trait.
+
+    Q: Why is this useful?
+
+    A: Very different objects are writable.
+    - a terminal interface
+    - standard output
+    - a network connection
+    - a internal buffer
+    - A file
+
+    Recall: Traits define shared behavior across different types!
+
+    Similarly Read is for stdin-like buffers, input files, etc.
+*/
+
+/*
+    Iterator
+*/
+
+pub fn iterator_example() {
+    for x in 0..10 {
+        println!("{}", x);
+    }
+    // Internally: for x in I means that I is a type implementing
+    // the Iterator trait.
+
+    // Most collections offer a way of getting an iterator from
+    // the object; where "iterator" means something that implements
+    // the Iterator trait.
+
+    let v = vec![1, 2, 3];
+    for x in v.iter() {
+        println!("{}", x);
+    }
+
+    let h: HashMap<usize, usize> = HashMap::new();
+    for x in h.iter() {
+        println!("{:?}", x);
+    }
+}
 
 /*
     Not technically in the standard library, but so widespread and
@@ -372,10 +482,15 @@ impl Index<&str> for AddressBook {
     StructOpt
     https://crates.io/crates/structopt
     - StructOpt trait: if you want to parse your data from the command line
+    - You saw (and hopefully were able to understand) this on Homework 2
 
     Serde
     https://crates.io/crates/serde
     - Serialize and Deserialize traits
+
+    Like with StructOpt,
+    You can usually just #[derive(Serialize, Deserialize)]
+    and it "just works".
 */
 
 /*
@@ -390,6 +505,17 @@ impl Index<&str> for AddressBook {
     For our AddressBook example, suppose that we want to
     print out a "summary view" of the AddressBook to the user,
     e.g. the first 10 people in it by name and age.
+*/
+impl AddressBook {
+    pub fn print_summary_first10_entries(&self) {
+        for _entry in self.by_name.iter().take(10) {
+            // Take: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.take
+            // **some logic to print out a summarized entry here. **
+        }
+    }
+}
+
+/*
     Now we take a look at the types inside our AddressBook:
     we have:
         - Person
@@ -401,3 +527,109 @@ impl Index<&str> for AddressBook {
 
     Having identified the common behavior, let's write a trait.
 */
+
+trait Summary {
+    // Documentation: this trait encapsulates the behavior of printing
+    // a short summary of a datatype.
+    // (i.e. abbreviated)
+
+    // What behavior defines this trait?
+
+    fn short_summary(&self) -> String;
+    fn long_summary(&self) -> String;
+    // Summarize the type in 'lines' lines or fewer.
+    fn summary_in_lines(&self, lines: usize) -> String;
+}
+
+// Now we can implement Summary for different types.
+
+impl Summary for PhoneNumber {
+    // phone numbers are already short.
+    fn short_summary(&self) -> String {
+        // In the context of format! apparently Deref
+        // doesn't kick in
+        format!("{:?}", &self.0)
+    }
+    fn long_summary(&self) -> String {
+        self.short_summary()
+    }
+    fn summary_in_lines(&self, lines: usize) -> String {
+        if lines > 0 {
+            self.short_summary()
+        } else {
+            "".to_string()
+        }
+    }
+}
+
+impl Summary for Person2 {
+    fn short_summary(&self) -> String {
+        format!("Person: {}, age {}", self.name, self.age)
+    }
+    fn long_summary(&self) -> String {
+        format!(
+            "Person: {}, age {}, phone {}",
+            self.name,
+            self.age,
+            self.phone.short_summary(),
+        )
+    }
+    fn summary_in_lines(&self, _lines: usize) -> String {
+        unimplemented!()
+    }
+}
+
+// Our AddressBook has a Vec<Person> in it
+impl Summary for Vec<Person2> {
+    fn short_summary(&self) -> String {
+        unimplemented!()
+    }
+    fn long_summary(&self) -> String {
+        unimplemented!()
+    }
+    fn summary_in_lines(&self, lines: usize) -> String {
+        // Iterating over the first 'lines' people
+        let mut result = String::new();
+        for item in self.iter().take(lines) {
+            result += &item.summary_in_lines(1);
+        }
+        result
+    }
+}
+
+// And finally I could then implement Summary for AddressBook
+impl Summary for AddressBook {
+    fn short_summary(&self) -> String {
+        unimplemented!()
+    }
+    fn long_summary(&self) -> String {
+        unimplemented!()
+    }
+    fn summary_in_lines(&self, _lines: usize) -> String {
+        unimplemented!()
+    }
+}
+
+/*
+    One last thing about implementing your own traits:
+    Sometimes you want do define derived functionality from
+    the implemented shared functionality.
+
+    For our Summary trait, maybe we want
+    a summary_in_10_lines function. What should we do?
+*/
+
+trait Summary2 {
+    fn short_summary(&self) -> String;
+    fn long_summary(&self) -> String;
+    // Summarize the type in 'lines' lines or fewer.
+    fn summary_in_lines(&self, lines: usize) -> String;
+
+    // Derived function!
+    fn summary_in_10_lines(&self) -> String {
+        self.summary_in_lines(10)
+    }
+
+    // The above provides a default implementation, so no type
+    // implementing the trait has to be modified to add summary_in_10_lines.
+}

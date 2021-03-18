@@ -8,6 +8,8 @@
 
 ## Reminders (March 18)
 
+- Add/drop deadline tomorrrow! Hoping to get grades back by then.
+
 - Homework 3 later than initially planned. Will be posted soon, likely due April 1.
 
 ## Outline of lecture
@@ -30,6 +32,7 @@ Traits define *shared behavior* across different types.
 - Defining your own traits
 
 **Generics:**
+
 Generics are like `Vec<T>`.
 Generics are how you *generalize data structures and functions*, making them
 work for different parameter types.
