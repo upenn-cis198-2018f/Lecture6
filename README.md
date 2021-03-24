@@ -42,3 +42,7 @@ work for different parameter types.
 - Making structs (and their methods) generic
 
 - Using traits to enable truly generic programming
+
+### Additional Material
+
+Some additional utility traits are described in the optional material `more_utility_traits.rs`, to complement what we discussed in class.

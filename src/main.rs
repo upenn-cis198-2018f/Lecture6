@@ -1,4 +1,5 @@
 pub mod generics;
+pub mod more_utility_traits;
 pub mod traits;
 
 fn main() {
